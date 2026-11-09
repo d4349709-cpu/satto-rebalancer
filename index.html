@@ -1303,12 +1303,11 @@ function renderGate(target){
   const login=gateTab==="login";
   G.innerHTML=`<div class="gate"><div class="seal-s">사또</div>
    <div class="seg" role="group" aria-label="로그인 또는 가입"><button type="button" data-g="login" aria-pressed="${login}">로그인</button><button type="button" data-g="join" aria-pressed="${!login}">처음 왔어요</button></div>
-   <h1>${login?"닉네임으로 <em>들어가기</em>":"초대 코드로 <em>가입하기</em>"}</h1>
-   <p class="tip">${login?"닉네임과 숫자 4자리 비밀번호를 넣어 주세요.":"닉네임과 숫자 4자리 비밀번호를 정하고, 받은 초대 코드를 넣어 주세요. 닉네임은 ‘모두의 포트폴리오’ 랭킹에도 쓰여요."}</p>
+   <h1>${login?"닉네임으로 <em>들어가기</em>":"닉네임으로 <em>가입하기</em>"}</h1>
+   <p class="tip">${login?"닉네임과 숫자 4자리 비밀번호를 넣어 주세요.":"쓰고 싶은 닉네임과 숫자 4자리 비밀번호를 정해 주세요. 닉네임은 ‘모두의 포트폴리오’ 랭킹에도 쓰여요."}</p>
    <div class="field"><label class="label" for="gNick">닉네임 (2~12자)</label><input type="text" class="txt" id="gNick" maxlength="12" autocomplete="username" placeholder="예: 수원 사또"></div>
    <div class="row2"><div class="field"><label class="label" for="gPin">비밀번호 숫자 4자리</label><input type="password" class="pin" id="gPin" inputmode="numeric" maxlength="4" autocomplete="${login?"current-password":"new-password"}" placeholder="••••"></div>
    ${login?"":`<div class="field"><label class="label" for="gPin2">한 번 더</label><input type="password" class="pin" id="gPin2" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••"></div>`}</div>
-   ${login?"":`<div class="field"><label class="label" for="gCode">초대 코드</label><input type="text" class="txt" id="gCode" autocomplete="off" placeholder="운영자에게 받은 코드"></div>`}
    <p class="err" id="gErr"></p><button class="btn" type="button" id="gOk">${login?"들어가기":"가입하고 시작하기"}</button>
    <p class="tip" style="font-size:.86rem">${login?"비밀번호를 잊었다면 운영자에게 초기화를 요청해 주세요.":"내 종목과 금액은 나만 볼 수 있어요. 다른 사람에게는 유형·비중(%)·수익률만 익명으로 집계돼요."}</p></div>`;
   G.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{gateTab=b.dataset.g;renderGate(target)});
@@ -1322,13 +1321,10 @@ function renderGate(target){
         if(error){er.textContent=/rate|many/i.test(error.message)?"시도가 너무 많아요. 잠시 후 다시 해 주세요.":"닉네임이나 비밀번호가 맞지 않아요.";btn.disabled=false;return}
       }else{
         if(p!==$("gPin2").value){er.textContent="두 비밀번호가 서로 달라요.";btn.disabled=false;return}
-        const code=$("gCode").value.trim();
-        const {data:ok,error:e0}=await sb.rpc("check_invite",{p_code:code});
-        if(e0||!ok){er.textContent="초대 코드가 맞지 않아요.";btn.disabled=false;return}
         const {data,error}=await sb.auth.signUp({email:await nickEmail(n),password:pinPw(p)});
         if(error){er.textContent=/registered|exists/i.test(error.message)?"이미 쓰고 있는 닉네임이에요.":"가입하지 못했어요: "+error.message;btn.disabled=false;return}
         if(!data.session){er.textContent="운영자 설정이 필요해요 (Supabase에서 이메일 확인 끄기).";btn.disabled=false;return}
-        const {error:e2}=await sb.rpc("join_satto",{p_nick:n,p_code:code});
+        const {error:e2}=await sb.rpc("join_satto",{p_nick:n});
         if(e2){await sb.auth.signOut();er.textContent=/duplicate|unique/i.test(e2.message)?"이미 쓰고 있는 닉네임이에요.":"가입을 마치지 못했어요.";btn.disabled=false;return}
         S=JSON.parse(JSON.stringify(S_INIT));
       }
@@ -1378,7 +1374,7 @@ async function afterLogin(){
   const {data:{session}}=await sb.auth.getSession();SESSION=session;myId=session?.user?.id||null;
   if(!myId){LOADED=true;renderAll();showTab();setSave("로그인하면 저장돼요");return}
   const {data:prof}=await sb.from("profiles").select("nick").eq("id",myId).maybeSingle();
-  if(!prof){await sb.auth.signOut();myId=null;SESSION=null;LOADED=true;renderAll();showTab();toast("가입이 끝나지 않은 계정이에요. 초대 코드를 확인하고 다시 가입해 주세요.");return}
+  if(!prof){await sb.auth.signOut();myId=null;SESSION=null;LOADED=true;renderAll();showTab();toast("가입이 끝나지 않은 계정이에요. 다른 닉네임으로 다시 가입해 주세요.");return}
   const {data:row}=await sb.from("portfolios").select("data").eq("user_id",myId).maybeSingle();
   if(row?.data)load(row.data);S.nick=prof.nick;
   LOADED=true;renderAll();showTab();setSave(row?"저장됨":"아직 저장 안 됨");
