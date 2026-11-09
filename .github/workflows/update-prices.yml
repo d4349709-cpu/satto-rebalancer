@@ -1,0 +1,22 @@
+name: 종가 갱신
+
+on:
+  schedule:
+    - cron: "45 6 * * 1-5"   # 평일 15:45 (한국 장 마감 후)
+    - cron: "10 22 * * 1-5"  # 다음 날 07:10 (미국 장 마감 후)
+  workflow_dispatch: {}       # Actions 탭에서 'Run workflow'로 바로 실행
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 시세 받아서 저장
+        run: node scripts/update-prices.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
