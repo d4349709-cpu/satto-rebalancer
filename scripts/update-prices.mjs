@@ -5,7 +5,8 @@ const KEY = process.env.SUPABASE_SERVICE_KEY || "";
 if (!BASE || !KEY) { console.error("SUPABASE_URL / SUPABASE_SERVICE_KEY 가 필요해요"); process.exit(1); }
 
 const UA = { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36", "Accept": "application/json" };
-const DB = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
+// 새 secret 키(sb_secret_)는 apikey 헤더로만, 예전 service_role 키(eyJ…)는 Authorization에도 넣어요
+const DB = { apikey: KEY, "Content-Type": "application/json", ...(KEY.startsWith("eyJ") ? { Authorization: `Bearer ${KEY}` } : {}) };
 const safeId = c => String(c).toUpperCase().replace(/[^A-Z0-9_.\-]/g, "_").slice(0, 60);
 const kst = (ms = Date.now()) => new Date(ms + 9 * 3600e3);
 const kstDate = ms => kst(ms).toISOString().slice(0, 10);
